@@ -1,0 +1,119 @@
+{
+  "sections": [
+    {
+      "id": "expr_libre_intro",
+      "title": "Expression libre — ressenti global",
+      "questions": [
+        {
+          "id": "QO_INTRO",
+          "type": "open",
+          "text": "Comment vous sentez-vous dans votre travail au quotidien ? (équipements, espace, relations, reconnaissance…)"
+        }
+      ]
+    },
+    {
+      "id": "bureautique_informatique",
+      "title": "📂 Bureautique et Informatique",
+      "questions": [
+        { "id": "Q1", "type": "rating", "text": "Êtes-vous satisfait(e) de la performance de votre ordinateur professionnel ?" },
+        { "id": "Q2", "type": "rating", "text": "Êtes-vous satisfait(e) de la qualité globale du reste du matériel informatique (écran, souris, clavier) ?" },
+        { "id": "Q3", "type": "rating", "text": "Êtes-vous satisfait(e) de la connexion aux outils internes, au bureau ou à distance ?" },
+        { "id": "Q4", "type": "rating", "text": "Êtes-vous satisfait(e) du matériel téléphonique (téléphone fixe, casque, logiciel 3CX) ?" }
+      ]
+    },
+    {
+      "id": "espace_travail",
+      "title": "🧑‍💻 Espace de travail",
+      "questions": [
+        { "id": "Q5", "type": "rating", "text": "Êtes-vous satisfait(e) de votre espace global (luminosité, bruit, rangement…) ?" },
+        { "id": "Q6", "type": "rating", "text": "Êtes-vous satisfait(e) du mobilier mis à disposition (bureau, siège) ?" }
+      ]
+    },
+    {
+      "id": "conditions_travail",
+      "title": "🗃️ Conditions de travail",
+      "questions": [
+        { "id": "Q7", "type": "rating", "text": "Estimez-vous que votre charge de travail est raisonnable et adaptée à votre poste ?" },
+        { "id": "Q8", "type": "rating", "text": "Les missions que l'on vous confie sont-elles claires et bien expliquées ?" },
+        { "id": "Q9", "type": "rating", "text": "Disposez-vous des moyens nécessaires pour réaliser votre travail efficacement ?" },
+        { "id": "Q10", "type": "rating", "text": "Ressentez-vous un niveau de stress important dans votre travail ? [1 = Très stressé(e), 5 = Pas du tout]" }
+      ]
+    },
+    {
+      "id": "relations_humaines",
+      "title": "👥 Relations humaines",
+      "questions": [
+        { "id": "Q11", "type": "rating", "text": "Comment jugez-vous la qualité des relations avec vos collègues ?" },
+        { "id": "Q12", "type": "rating", "text": "Comment jugez-vous la qualité de la relation avec votre manager ?" }
+      ]
+    },
+    {
+      "id": "reconnaissance",
+      "title": "🏅 Reconnaissance et valorisation",
+      "questions": [
+        { "id": "Q13", "type": "rating", "text": "Vous sentez-vous reconnu(e) pour votre travail ?" },
+        { "id": "Q14", "type": "rating", "text": "Avez-vous le sentiment que votre travail a du sens ?" }
+      ]
+    },
+    {
+      "id": "remuneration",
+      "title": "💰 Rémunération et avantages",
+      "questions": [
+        { "id": "Q15", "type": "rating", "text": "Êtes-vous satisfait(e) de votre rémunération globale ?" },
+        { "id": "Q16", "type": "rating", "text": "Pensez-vous que votre rémunération est adaptée par rapport à votre poste ?" },
+        { "id": "Q17", "type": "rating", "text": "Êtes-vous satisfait(e) des avantages sociaux (mutuelle, titres restaurant, etc.) ?" }
+      ]
+    },
+    {
+      "id": "equilibre_vie",
+      "title": "🏡 Équilibre vie professionnelle / personnelle",
+      "questions": [
+        { "id": "Q18", "type": "rating", "text": "Parvenez-vous à concilier vie professionnelle et vie personnelle ?" },
+        {
+          "id": "Q19",
+          "type": "radio",
+          "text": "Que pensez-vous du télétravail chez Audirep ?",
+          "options": [
+            "deux jours c'est le bon équilibre",
+            "un jour serait suffisant",
+            "trois jours serait encore mieux"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "motivation",
+      "title": "🧭 Motivation et engagement",
+      "questions": [
+        { "id": "Q20", "type": "rating", "text": "Vous sentez-vous motivé(e) dans votre travail au quotidien ?" }
+      ]
+    },
+    {
+      "id": "expr_libre_outro",
+      "title": "🗣️ Expression libre — suggestions",
+      "questions": [
+        {
+          "id": "QO_OUTRO",
+          "type": "open",
+          "text": "Avez-vous des dernières suggestions ou remarques sur ces différents sujets ?"
+        }
+      ]
+    },
+    {
+      "id": "profil",
+      "title": "🎓 Profil",
+      "questions": [
+        {
+          "id": "Q21",
+          "type": "radio",
+          "text": "Veuillez choisir une seule option parmi les suivantes :",
+          "options": [
+            "Directeur de département, de clientèle ou d'études",
+            "Chef de groupe ou chargé d'études",
+            "Autres fonctions"
+          ]
+        }
+      ]
+    }
+  ]
+}
