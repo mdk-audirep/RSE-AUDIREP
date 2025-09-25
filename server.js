@@ -33,6 +33,195 @@ app.get('/', (req, res) => {
 
 // Dossier pour stocker les réponses du questionnaire
 const RESPONSES_DIR = path.join(__dirname, 'responses');
+const QUESTIONS_PATH = path.join(__dirname, 'public', 'questions.json');
+const CSV_PATH = path.join(__dirname, 'public', 'questionnaire_qvt_responses.csv');
+
+let cachedQuestionsDefinition = null;
+
+async function loadQuestionsDefinition() {
+  if (cachedQuestionsDefinition) {
+    return cachedQuestionsDefinition;
+  }
+
+  try {
+    const fileContent = await fs.readFile(QUESTIONS_PATH, 'utf-8');
+    cachedQuestionsDefinition = JSON.parse(fileContent);
+  } catch (error) {
+    console.error('Erreur lors du chargement de questions.json:', error);
+    cachedQuestionsDefinition = null;
+  }
+
+  return cachedQuestionsDefinition;
+}
+
+function flattenQuestions(definition) {
+  const flattened = [];
+
+  if (!definition || !Array.isArray(definition.sections)) {
+    return flattened;
+  }
+
+  definition.sections.forEach((section) => {
+    if (section.questions && Array.isArray(section.questions)) {
+      section.questions.forEach((question) => {
+        flattened.push(question);
+      });
+    }
+  });
+
+  return flattened;
+}
+
+function buildCsvConfiguration(flattenedQuestions) {
+  const ratingIds = [];
+  const radioIds = [];
+  const openIds = [];
+
+  flattenedQuestions.forEach((question) => {
+    if (!question || !question.id) {
+      return;
+    }
+
+    if (question.type === 'rating') {
+      ratingIds.push(question.id);
+    } else if (question.type === 'radio') {
+      radioIds.push(question.id);
+    } else if (question.type === 'open') {
+      openIds.push(question.id);
+    }
+  });
+
+  const introKey = openIds.find((id) => id === 'QO_INTRO') || null;
+  const outroKey = openIds.find((id) => id === 'QO_OUTRO') || null;
+  const middleOpenIds = openIds.filter((id) => id !== introKey && id !== outroKey);
+
+  const orderedOpenIds = [];
+  if (introKey) {
+    orderedOpenIds.push(introKey);
+  }
+  middleOpenIds.forEach((id) => orderedOpenIds.push(id));
+  if (outroKey) {
+    orderedOpenIds.push(outroKey);
+  }
+
+  const columns = ['sessionId', 'timestampStart', 'timestampEnd'];
+
+  orderedOpenIds.forEach((id) => {
+    columns.push(id);
+    columns.push(`${id}_followup`);
+  });
+
+  ratingIds.forEach((id) => {
+    columns.push(id);
+    columns.push(`${id}_followup`);
+  });
+
+  radioIds.forEach((id) => {
+    columns.push(id);
+    columns.push(`${id}_followup`);
+  });
+
+  return {
+    columns,
+    ratingIds,
+    radioIds,
+    openIds: orderedOpenIds
+  };
+}
+
+function formatCsvValue(value) {
+  const stringValue = value === undefined || value === null ? '' : String(value);
+  const escaped = stringValue.replace(/"/g, '""');
+  return `"${escaped}"`;
+}
+
+async function ensureCsvHeader(columns) {
+  try {
+    await fs.access(CSV_PATH);
+  } catch {
+    const headerLine = columns.map(formatCsvValue).join(',') + '\n';
+    await fs.writeFile(CSV_PATH, headerLine, 'utf-8');
+  }
+}
+
+function extractAnswerValue(answer, field = 'value') {
+  if (answer === undefined || answer === null) {
+    return '';
+  }
+
+  if (typeof answer === 'object') {
+    const candidate = answer[field];
+    if (candidate === undefined || candidate === null) {
+      return '';
+    }
+    return String(candidate);
+  }
+
+  return field === 'value' ? String(answer) : '';
+}
+
+async function appendStructuredAnswersToCsv(sessionId, structuredAnswers, timestamps = {}) {
+  if (!structuredAnswers || typeof structuredAnswers !== 'object') {
+    return;
+  }
+
+  const questionsDefinition = await loadQuestionsDefinition();
+  if (!questionsDefinition) {
+    return;
+  }
+
+  const flattened = flattenQuestions(questionsDefinition);
+  const { columns, ratingIds, radioIds, openIds } = buildCsvConfiguration(flattened);
+
+  await ensureCsvHeader(columns);
+
+  const answers = structuredAnswers.answers || {};
+  const timestampStart = structuredAnswers.timestampStart || timestamps.start || '';
+  const timestampEnd = structuredAnswers.timestampEnd || timestamps.end || '';
+
+  const rowValues = [
+    sessionId,
+    timestampStart || '',
+    timestampEnd || ''
+  ];
+
+  openIds.forEach((id) => {
+    const answer = answers[id];
+    rowValues.push(extractAnswerValue(answer));
+    rowValues.push(extractAnswerValue(answer, 'followup'));
+  });
+
+  ratingIds.forEach((id) => {
+    const answer = answers[id];
+    rowValues.push(extractAnswerValue(answer));
+    rowValues.push(extractAnswerValue(answer, 'followup'));
+  });
+
+  radioIds.forEach((id) => {
+    const answer = answers[id];
+    rowValues.push(extractAnswerValue(answer));
+    rowValues.push(extractAnswerValue(answer, 'followup'));
+  });
+
+  const line = rowValues.map(formatCsvValue).join(',') + '\n';
+  await fs.appendFile(CSV_PATH, line, 'utf-8');
+}
+
+function computeDurationMinutes(start, end) {
+  if (!start || !end) {
+    return 0;
+  }
+
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return 0;
+  }
+
+  const diff = endDate.getTime() - startDate.getTime();
+  return diff > 0 ? Math.round(diff / 1000 / 60) : 0;
+}
 
 // Créer le dossier responses s'il n'existe pas
 async function ensureResponsesDir() {
@@ -86,42 +275,54 @@ app.post('/api/chat', async (req, res) => {
 // Endpoint pour sauvegarder les réponses du questionnaire
 app.post('/api/save-responses', async (req, res) => {
   try {
-    const { sessionId, responses, userInfo, completedAt } = req.body;
-    
+    const {
+      sessionId,
+      responses,
+      userInfo,
+      completedAt,
+      timestampStart,
+      timestampEnd,
+      structuredAnswers
+    } = req.body;
+
     if (!sessionId || !responses) {
       return res.status(400).json({ error: 'Session ID et réponses requis' });
     }
 
     await ensureResponsesDir();
 
-    // Créer l'objet de données à sauvegarder
+    const responsesArray = Array.isArray(responses) ? responses : [];
+
+    const inferredStart = timestampStart || (structuredAnswers && structuredAnswers.timestampStart) || (responsesArray.length > 0 ? responsesArray[0].timestamp : null);
+    const inferredEnd = timestampEnd || (structuredAnswers && structuredAnswers.timestampEnd) || completedAt || (responsesArray.length > 0 ? responsesArray[responsesArray.length - 1].timestamp : null) || new Date().toISOString();
+
     const surveyData = {
       sessionId,
-      responses,
+      responses: responsesArray,
+      structuredAnswers: structuredAnswers || null,
       userInfo: userInfo || {},
-      completedAt: completedAt || new Date().toISOString(),
+      timestampStart: inferredStart || null,
+      timestampEnd: inferredEnd,
+      completedAt: inferredEnd,
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
       metadata: {
-        totalQuestions: responses.length,
-        interviewDuration: responses.length > 0 ? 
-          Math.round((new Date(completedAt) - new Date(responses[0].timestamp)) / 1000 / 60) : 0, // en minutes
-        lastQuestion: responses.length > 0 ? responses[responses.length - 1].question : null
+        totalQuestions: responsesArray.length,
+        interviewDuration: computeDurationMinutes(inferredStart, inferredEnd),
+        lastQuestion: responsesArray.length > 0 ? responsesArray[responsesArray.length - 1].question : null
       }
     };
 
-    // Nom du fichier basé sur la date et l'ID de session
-    const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `survey_${timestamp}_${sessionId}.json`;
+    const datePrefix = new Date().toISOString().split('T')[0];
+    const filename = `survey_${datePrefix}_${sessionId}.json`;
     const filepath = path.join(RESPONSES_DIR, filename);
 
-    // Sauvegarder les données
     await fs.writeFile(filepath, JSON.stringify(surveyData, null, 2));
 
     console.log(`[${new Date().toISOString()}] Survey saved: ${filename}`);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: 'Réponses sauvegardées avec succès',
       surveyId: sessionId
     });
