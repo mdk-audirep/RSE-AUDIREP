@@ -1,1 +1,1370 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionnaire QVT - AudiRep</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chatbot-container {
+            width: 400px;
+            height: 600px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chatbot-header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chatbot-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chatbot-header .status {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            margin-top: 10px;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .message.user {
+            background: #007bff;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.bot {
+            background: white;
+            color: #333;
+            align-self: flex-start;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background: white;
+            padding: 12px 16px;
+            border-radius: 18px;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input:focus {
+            border-color: #007bff;
+        }
+
+        .chat-input:disabled {
+            background-color: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .send-button {
+            width: 45px;
+            height: 45px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 18px;
+        }
+
+        .send-button:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .send-button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.6;
+        }
+
+        .input-blocked {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .radio-options {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            align-self: flex-start;
+            max-width: 90%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-radius: 6px;
+            margin: 5px 0;
+        }
+
+        .radio-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+            accent-color: #007bff;
+        }
+
+        .radio-option label {
+            cursor: pointer;
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .radio-submit-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 15px;
+            transition: background-color 0.2s;
+            width: 100%;
+        }
+
+        .radio-submit-btn:hover {
+            background: #0056b3;
+        }
+
+        .radio-submit-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        /* Styles pour les boutons de notation */
+        .rating-options {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            align-self: flex-start;
+            max-width: 90%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .rating-title {
+            margin-bottom: 15px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+            text-align: center;
+        }
+
+        .rating-buttons {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .rating-btn {
+            width: 45px;
+            height: 45px;
+            border: 2px solid #e9ecef;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            color: #6c757d;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .rating-btn:hover {
+            border-color: #007bff;
+            color: #007bff;
+            transform: scale(1.1);
+        }
+
+        .rating-btn.selected {
+            border-color: #007bff;
+            background: #007bff;
+            color: white;
+            animation: pulse 0.3s;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .rating-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 15px;
+            padding: 0 5px;
+        }
+
+        .completion-message {
+            background: #28a745;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px;
+            margin: 20px;
+            display: none;
+        }
+
+        .error-message {
+            background: #dc3545;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        @media (max-width: 480px) {
+            .chatbot-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chatbot-container">
+        <div class="chatbot-header">
+            <h3>📋 Enquête Qualité de Vie au Travail</h3>
+            <div class="status" id="statusText">En cours...</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        
+        <div class="completion-message" id="completionMessage">
+            <h4>✅ Questionnaire terminé !</h4>
+            <p>Merci pour votre participation. Vos réponses ont été enregistrées.</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages"></div>
+        
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        
+        <div class="chat-input-container" id="inputContainer">
+            <div class="chat-input-wrapper">
+                <input 
+                    type="text" 
+                    class="chat-input" 
+                    id="chatInput" 
+                    placeholder="Tapez votre réponse..."
+                    maxlength="2000"
+                >
+                <button class="send-button" id="sendButton">
+                    ➤
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+		class SurveyChatbot {
+			constructor() {
+				this.chatMessages = document.getElementById('chatMessages');
+				this.chatInput = document.getElementById('chatInput');
+				this.sendButton = document.getElementById('sendButton');
+				this.typingIndicator = document.getElementById('typingIndicator');
+				this.errorMessage = document.getElementById('errorMessage');
+				this.completionMessage = document.getElementById('completionMessage');
+				this.inputContainer = document.getElementById('inputContainer');
+				this.progressFill = document.getElementById('progressFill');
+				this.statusText = document.getElementById('statusText');
+				
+				this.sessionId = 'survey_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+				
+				this.botIsResponding = false;
+				
+				this.initializeEventListeners();
+				this.surveyResponses = [];
+				this.currentQuestionIndex = 0;
+				this.isCompleted = false;
+				this.lastBotMessage = "";
+				this.waitingForValidResponse = false;
+				
+				setTimeout(() => this.startInterview(), 2000);
+                
+                this.conversationHistory = [
+					{
+						"role": "system",
+						"content": "Tu es un chatbot QVT. Tu poses un questionnaire structuré avec des questions fermées (note de 1 à 5) et quelques questions ouvertes (signalées par \"QO :\").\n\n⚠️ Très important :\nTu dois poser **une seule question à la fois**, puis **attendre la réponse de l'utilisateur** avant de continuer.\n\nPour faciliter la séparation automatique, sépare toujours ta réaction de ta question par un double saut de ligne (\n\n) ou termine ta réaction par un point suivi d'un saut de ligne.\n Tu ne dois réagir que si les réponses aux questions fermées sont **1, 2 ou 5** (pas aux 3 ou 4).\n Pour les réponses **3 ou 4** ne remercie **qu'une fois sur trois** maximum. Passe directement à la question suivante si tu ne remercies pas.\n Ne réagis que pour **60%** des réponses (aléatoirement).\n\nImportant : ne **jamais** afficher \"QO :\" dans pour les questions ouvertes. Ne pas afficher les titres de section. Ne jamais numéroter les questions. Ne jamais relancer sur les questions ouvertes même si la réponse te paraît incohérente\n\nDans le cas inverse tu peux réagir brièvement avec humour et passer ensuite à la question suivante.\n\nTon style doit être :\n- Concis, direct et chaleureux\n- Utiliser des emojis pour illustrer subtilement les questions\n- Réponses et transitions très courtes\n- Un brin d'humour est bienvenu (sans exagération et pas dans toutes les questions que tu poses)\n\n📝 Pour chaque question fermée explique et contextualise à chaque fois la notation entre 1 et 5 selon la question. L'explication peut-être différente selon la question (ex : \"1- pas du tout satisfait 5- très satisfait\" ou \"1-pas du tout adaptée 5-parfaitement adaptée\"). Vérifie toujours que la réponse est un chiffre entre 1 et 5. Sinon, explique brièvement l'échelle et repose la question.\n\n📌 Échelle par défaut (à expliquer dans l'intro) :\n1 = avis le plus négatif \n5 = avis le plus positif\n\n📌 Pour la question : \"Avez-vous le sentiment que votre travail a du sens ?\", précise : 1 = peu de sens, 5 = beaucoup de sens.\n\n📌 Pour la question : \"Que pensez-vous du télétravail chez Audirep ?\", demande de choisir une seule réponse parmi 3, au format bouton radio.\n\n📌 Pour la dernière question (profil), demande de choisir une seule réponse parmi 3, au format bouton radio.\n\n🎉 INTRODUCTION :\nCommence l'entretien par un message de bienvenue sympathique et rassurant, incluant ces éléments :\n- Il s'agit d'un questionnaire sur la qualité de vie au travail\n- Il comporte à la fois des questions ouvertes (réponses libres) et fermées (réponses de 1 à 5)\n- Pour les questions fermées, l'échelle est : 1 = avis le plus négatif à 5 = avis le plus positif\n- Encourage l'utilisateur à répondre honnêtement\n- Ajoute une touche d'humour légère pour détendre mais pas dans toutes tes questions\n\n\Pour la toute première question de la section **Expression libre — ressenti global**, précise obligatoirement qu'il s'agit d'une question ouverte\n\nintroduire obligatoirement la première question de la section **📂 Bureautique et Informatique** par la phrase \" Nous allons commencer par votre avis sur la bureautique.\"\n\nNe met surtout pas cette phrase dans l'introduction !\n\nEffectue une transition plus tranchée entre les sections **🧑‍💻 Espace de travail** et **🗃️ Conditions de travail** par une expression comme \"passons à un sujet très important\" ou \"passons maintenant sur une partie très importante\" par exemple, en citant la nouvelle section, le but étant de montrer qu'il s'agit d'une autre thématique qui n'a rien à voir\n\n🛑 Si l'utilisateur souhaite arrêter, termine toujours par cette phrase exacte :\n\"Ceci conclut notre entretien. Merci pour votre participation.\"\n\n✅ Lorsque l'entretien est terminé, c'est-à-dire après la dernière réponse, termine également par :\n\"Ceci conclut notre entretien. Merci pour votre participation.\""
+					},
+					{
+						"role": "user",
+						"content": "Lance le questionnaire QVT en suivant les consignes ci-dessus. Voici les questions à poser, dans l'ordre :\n\n---\n**Expression libre — ressenti global**\nQO : Comment vous sentez-vous dans votre travail au quotidien ? (équipements, espace, relations, reconnaissance…)\n\n---\n**📂 Bureautique et Informatique**\n1. Êtes-vous satisfait(e) de la performance de votre ordinateur professionnel ?\n2. Êtes-vous satisfait(e) de la qualité globale du reste du matériel informatique (écran, souris, clavier) ?\n3. Êtes-vous satisfait(e) de la connexion aux outils internes, au bureau ou à distance ?\n4. Êtes-vous satisfait(e) du matériel téléphonique (téléphone fixe, casque, logiciel 3CX) ?\nQO : Avez-vous des remarques sur les outils informatiques mis à votre disposition ?\n\n---\n**🧑‍💻 Espace de travail**\n5. Êtes-vous satisfait(e) de votre espace global (luminosité, bruit, rangement…) ?\n6. Êtes-vous satisfait(e) du mobilier mis à disposition (bureau, siège) ?\nQO : Quelles améliorations souhaiteriez-vous dans votre environnement de travail ?\n\n---\n**🗃️ Conditions de travail**\n7. Estimez-vous que votre charge de travail est raisonnable et adaptée à votre poste ?\n8. Les missions que l'on vous confie sont-elles claires et bien expliquées ?\n9. Disposez-vous des moyens nécessaires pour réaliser votre travail efficacement ?\n10. Ressentez-vous un niveau de stress important dans votre travail ?\n(Attention : ici, 1 = Très stressé(e), 5 = Pas du tout stressé(e))\n\n---\n**👥 Relations humaines**\n11. Comment jugez-vous la qualité des relations avec vos collègues ?\n12. Comment jugez-vous la qualité de la relation avec votre manager ?\nQO : Avez-vous d'autres remarques ou suggestions sur votre travail au quotidien ?\n\n---\n**🏅 Reconnaissance et valorisation**\n13. Vous sentez-vous reconnu(e) pour votre travail ?\n14. Avez-vous le sentiment que votre travail a du sens ?\n\n---\n**💰 Rémunération et avantages**\n15. Êtes-vous satisfait(e) de votre rémunération globale ?\n16. Pensez-vous que votre rémunération est adaptée par rapport à votre poste ?\n17. Êtes-vous satisfait(e) des avantages sociaux (mutuelle, titres restaurant, etc.) ?\nQO : Avez-vous des suggestions ou attentes en matière de reconnaissance, de rémunération ou d'avantages ?\n\n---\n**🏡 Équilibre vie professionnelle / personnelle**\n18. Parvenez-vous à concilier vie professionnelle et vie personnelle ?\n19. Veuillez choisir une seule option parmi les suivantes :\nRADIO_QUESTION:deux jours c'est le bon équilibre|un jour serait suffisant|trois jours serait encore mieux\n\n---\n**🧭 Motivation et engagement**\n20. Vous sentez-vous motivé(e) dans votre travail au quotidien ?\n\n---\n**🗣️ Expression libre — suggestions**\nQO : Avez-vous des dernières suggestions ou remarques sur ces différents sujets ?\n\n---\n**🎓 Profil**\n21. Veuillez choisir une seule option parmi les suivantes :\nRADIO_QUESTION:Directeur de département, de clientèle ou d'études|Chef de groupe ou chargé d'études|Autres fonctions"
+					}
+				];
+            }
+
+			initializeEventListeners() {
+				this.sendButton.addEventListener('click', () => {
+					if (!this.botIsResponding) {
+						this.sendMessage();
+					}
+				});
+				
+				// Stocker la référence à la fonction pour pouvoir la désactiver
+				this.handleEnterKey = (e) => {
+					if (e.key === 'Enter' && !e.shiftKey && !this.botIsResponding) {
+						e.preventDefault();
+						this.sendMessage();
+					}
+				};
+				
+				this.chatInput.addEventListener('keypress', this.handleEnterKey);
+
+				this.chatInput.addEventListener('input', () => {
+					if (!this.botIsResponding) {
+						this.sendButton.disabled = this.chatInput.value.trim() === '';
+					}
+				});
+			}
+
+			blockUserInput() {
+				this.botIsResponding = true;
+				this.chatInput.disabled = true;
+				this.sendButton.disabled = true;
+				this.chatInput.blur();
+				this.inputContainer.classList.add('input-blocked');
+			}
+
+			unblockUserInput() {
+				this.botIsResponding = false;
+				this.chatInput.disabled = false;
+				this.sendButton.disabled = this.chatInput.value.trim() === '';
+				this.inputContainer.classList.remove('input-blocked');
+				setTimeout(() => {
+					this.chatInput.focus();
+				}, 100);
+			}
+
+			separateResponse(response) {
+				const cleanResponse = response.trim();
+				
+				const simpleSeparationPatterns = [
+					/\n\n+/,
+					/\.\s*\n/,
+					/!\s*\n/,
+					/\?\s*\n/,
+				];
+				
+				for (const pattern of simpleSeparationPatterns) {
+					const parts = cleanResponse.split(pattern);
+					
+					if (parts.length === 2) {
+						const firstPart = parts[0].trim();
+						const secondPart = parts[1].trim();
+						
+						if (firstPart.length > 3 && secondPart.length > 10) {
+							const match = cleanResponse.match(pattern);
+							if (match && match[0].includes('.')) {
+								return [firstPart + '.', secondPart];
+							} else if (match && match[0].includes('!')) {
+								return [firstPart + '!', secondPart];
+							} else if (match && match[0].includes('?')) {
+								return [firstPart + '?', secondPart];
+							} else {
+								return [firstPart, secondPart];
+							}
+						}
+					}
+				}
+				
+				const complexPatterns = [
+					/(\.\s+)(?=[A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ])/,
+					/(!\s+)(?=[A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ])/,
+					/(\?\s+)(?=[A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ])/
+				];
+				
+				for (const pattern of complexPatterns) {
+					const match = cleanResponse.match(pattern);
+					if (match) {
+						const splitIndex = match.index + match[1].length;
+						const firstPart = cleanResponse.substring(0, splitIndex - match[1].length + 1).trim();
+						const secondPart = cleanResponse.substring(splitIndex).trim();
+						
+						if (firstPart.length > 3 && secondPart.length > 10) {
+							return [firstPart, secondPart];
+						}
+					}
+				}
+				
+				const transitionWords = [
+					'Passons maintenant',
+					'Maintenant',
+					'À présent',
+					'Parlons de',
+					'Concernant',
+					'Pour la suite',
+					'Question suivante',
+					'Continuons avec',
+					'Abordons',
+					'Intéressons-nous'
+				];
+				
+				for (const word of transitionWords) {
+					const index = cleanResponse.indexOf(word);
+					if (index > 10 && index < cleanResponse.length - 10) {
+						const beforeWord = cleanResponse.substring(0, index).trim();
+						const fromWord = cleanResponse.substring(index).trim();
+						
+						if (beforeWord.length > 3 && fromWord.length > 10) {
+							return [beforeWord, fromWord];
+						}
+					}
+				}
+				
+				const questionPatterns = [
+					/([^.!?]*[.!?])\s+(.*\?)/,
+					/([^.!?]*[.!?])\s+(Comment|Que|Quoi|Où|Quand|Pourquoi|Êtes-vous|Avez-vous|Pensez-vous|Ressentez-vous|Estimez-vous)/i
+				];
+				
+				for (const pattern of questionPatterns) {
+					const match = cleanResponse.match(pattern);
+					if (match && match[1] && match[2]) {
+						const reaction = match[1].trim();
+						const question = match[2].trim();
+						
+						if (reaction.length > 3 && question.length > 10) {
+							return [reaction, question];
+						}
+					}
+				}
+				
+				return [cleanResponse];
+			}
+
+			async startInterview() {
+				if (this.isCompleted) return;
+				
+				this.showTyping();
+				
+				try {
+					const response = await this.callAPI(this.conversationHistory);
+					
+					this.hideTyping();
+					
+					const separatedResponses = this.separateResponse(response);
+					if (separatedResponses.length > 1) {
+						this.addMessage(separatedResponses[0], 'bot');
+						setTimeout(() => {
+							this.showTyping();
+							setTimeout(() => {
+								this.hideTyping();
+								this.addMessage(separatedResponses[1], 'bot');
+								this.lastBotMessage = separatedResponses[1];
+							}, 800);
+						}, 1000);
+						this.lastBotMessage = separatedResponses[1];
+					} else {
+						this.addMessage(response, 'bot');
+						this.lastBotMessage = response;
+					}
+					
+					this.conversationHistory.push({
+						role: "assistant",
+						content: response
+					});
+					
+				} catch (error) {
+					this.hideTyping();
+					this.showError('Erreur lors du démarrage.');
+					console.error('Erreur:', error);
+				}
+			}
+
+			isValidResponse(message, questionText) {
+				if (this.isOpenQuestion(questionText)) {
+					return true;
+				}
+				
+				if (this.isRadioQuestion(questionText)) {
+					return false;
+				}
+				
+				const num = parseInt(message.trim());
+				return !isNaN(num) && num >= 1 && num <= 5;
+			}
+
+			isOpenQuestion(questionText) {
+				const indicators = [
+					'comment vous sentez-vous',
+					'vous sentez-vous dans votre travail',
+					'remarques',
+					'améliorations',
+					'ambiance',
+					'suggestions',
+					'message',
+					'attentes',
+					'dernières suggestions',
+					'autres remarques',
+					'environnement de travail',
+					'souhaiteriez-vous',
+					'avez-vous des remarques',
+					'avez-vous des suggestions',
+					'avez-vous d\'autres remarques',
+					'avez-vous des dernières'
+				];
+				
+				const lowerQuestion = questionText.toLowerCase();
+				return indicators.some(indicator => lowerQuestion.includes(indicator));
+			}
+
+			isRadioQuestion(questionText) {
+				if (questionText.includes('RADIO_QUESTION:')) {
+					return true;
+				}
+				
+				const lowerText = questionText.toLowerCase();
+				if (lowerText.includes('télétravail')) {
+					return true;
+				}
+				
+				if ((lowerText.includes('profil') || lowerText.includes('directeur') || lowerText.includes('chef de groupe')) 
+					&& this.currentQuestionIndex >= 19) {
+					return true;
+				}
+				
+				return false;
+			}
+
+			// FONCTION UNIQUE pour créer les boutons de notation (VALIDATION AUTOMATIQUE)
+			createRatingButtons(questionText) {
+				console.log("🎯 CRÉATION BOUTONS NOTATION - CLIC DIRECT");
+				
+				const ratingContainer = document.createElement('div');
+				ratingContainer.className = 'rating-options';
+				ratingContainer.setAttribute('data-source', 'UNIQUE-RATING-FUNCTION');
+
+				// Adapter les labels selon la question
+				const lowerText = questionText.toLowerCase();
+				let leftLabel = '1 = Pas du tout';
+				let rightLabel = '5 = Totalement';
+
+				if (lowerText.includes('satisfait')) {
+					leftLabel = '1 = Pas du tout satisfait(e)';
+					rightLabel = '5 = Très satisfait(e)';
+				} else if (lowerText.includes('stress')) {
+					leftLabel = '1 = Très stressé(e)';
+					rightLabel = '5 = Pas du tout stressé(e)';
+				} else if (lowerText.includes('sens')) {
+					leftLabel = '1 = Peu de sens';
+					rightLabel = '5 = Beaucoup de sens';
+				} else if (lowerText.includes('raisonnable') || lowerText.includes('adaptée')) {
+					leftLabel = '1 = Pas du tout adaptée';
+					rightLabel = '5 = Parfaitement adaptée';
+				} else if (lowerText.includes('claires') || lowerText.includes('missions')) {
+					leftLabel = '1 = Pas claires du tout';
+					rightLabel = '5 = Très claires';
+				} else if (lowerText.includes('motivé')) {
+					leftLabel = '1 = Pas du tout motivé(e)';
+					rightLabel = '5 = Très motivé(e)';
+				} else if (lowerText.includes('reconnu')) {
+					leftLabel = '1 = Pas du tout reconnu(e)';
+					rightLabel = '5 = Très reconnu(e)';
+				} else if (lowerText.includes('qualité')) {
+					leftLabel = '1 = Très mauvaise';
+					rightLabel = '5 = Excellente';
+				} else if (lowerText.includes('concilier') || lowerText.includes('équilibre')) {
+					leftLabel = '1 = Pas du tout';
+					rightLabel = '5 = Parfaitement';
+				} else if (lowerText.includes('moyens nécessaires')) {
+					leftLabel = '1 = Pas du tout';
+					rightLabel = '5 = Complètement';
+				}
+
+				const title = document.createElement('div');
+				title.className = 'rating-title';
+				title.textContent = 'Cliquez sur votre note :';
+				ratingContainer.appendChild(title);
+
+				const buttonsContainer = document.createElement('div');
+				buttonsContainer.className = 'rating-buttons';
+
+				// Créer les 5 boutons avec validation automatique au clic
+				for (let i = 1; i <= 5; i++) {
+					const button = document.createElement('button');
+					button.className = 'rating-btn';
+					button.textContent = i.toString();
+					button.value = i.toString();
+					
+					// Event listener avec validation immédiate
+					button.addEventListener('click', () => {
+						console.log("💥 CLIC SUR NOTE:", i, "- VALIDATION IMMÉDIATE");
+						
+						// Animation de sélection
+						ratingContainer.querySelectorAll('.rating-btn').forEach(btn => btn.classList.remove('selected'));
+						button.classList.add('selected');
+						
+						// Validation automatique avec délai visuel
+						setTimeout(() => {
+							this.addMessage(i.toString(), 'user');
+							this.surveyResponses.push({
+								questionNumber: this.currentQuestionIndex + 1,
+								question: this.lastBotMessage,
+								userResponse: i.toString(),
+								timestamp: new Date().toISOString()
+							});
+							this.proceedToNextQuestion();
+							ratingContainer.remove();
+						}, 400);
+					});
+
+					buttonsContainer.appendChild(button);
+				}
+
+				ratingContainer.appendChild(buttonsContainer);
+
+				// Labels
+				const labelsContainer = document.createElement('div');
+				labelsContainer.className = 'rating-labels';
+				labelsContainer.innerHTML = `<span>${leftLabel}</span><span>${rightLabel}</span>`;
+				ratingContainer.appendChild(labelsContainer);
+
+				return ratingContainer;
+			}
+
+			// FONCTION pour continuer vers la question suivante
+			async proceedToNextQuestion() {
+				this.blockUserInput();
+				this.hideError();
+				this.showTyping();
+
+				try {
+					this.conversationHistory.push({
+						role: "user",
+						content: this.surveyResponses[this.surveyResponses.length - 1].userResponse
+					});
+
+					const response = await this.callAPI(this.conversationHistory);
+					this.hideTyping();
+					
+					const separatedResponses = this.separateResponse(response);
+					if (separatedResponses.length > 1) {
+						this.addMessage(separatedResponses[0], 'bot');
+						setTimeout(() => {
+							this.showTyping();
+							setTimeout(() => {
+								this.hideTyping();
+								this.addMessage(separatedResponses[1], 'bot');
+								this.lastBotMessage = separatedResponses[1];
+								setTimeout(() => this.unblockUserInput(), 300);
+							}, 800);
+						}, 1000);
+					} else {
+						this.addMessage(response, 'bot');
+						this.lastBotMessage = response;
+						setTimeout(() => this.unblockUserInput(), 300);
+					}
+					
+					this.conversationHistory.push({
+						role: "assistant",
+						content: response
+					});
+
+					this.currentQuestionIndex++;
+					this.updateProgress();
+
+					if (response.toLowerCase().includes('ceci conclut') || this.currentQuestionIndex >= 29) {
+						await this.completeSurvey();
+					}
+				} catch (error) {
+					this.hideTyping();
+					this.showError('Erreur survenue.');
+					this.unblockUserInput();
+					console.error('Erreur:', error);
+				}
+			}
+
+			createRadioButtons(questionText) {
+				if (questionText.includes('RADIO_QUESTION:')) {
+					const parts = questionText.split('RADIO_QUESTION:');
+					const optionsText = parts[1];
+					const options = optionsText.split('|');
+					
+					const isTelework = questionText.toLowerCase().includes('télétravail') || 
+									  questionText.toLowerCase().includes('deux jours') ||
+									  questionText.toLowerCase().includes('équilibre');
+					
+					return this.buildRadioContainer(options, isTelework);
+				}
+
+				const lowerText = questionText.toLowerCase();
+				if (lowerText.includes('télétravail')) {
+					const defaultOptions = [
+						'Deux jours c\'est le bon équilibre',
+						'Un jour serait suffisant', 
+						'Trois jours serait encore mieux'
+					];
+					
+					return this.buildRadioContainer(defaultOptions, true);
+				}
+
+				if ((lowerText.includes('profil') || lowerText.includes('directeur') || lowerText.includes('chef de groupe'))
+					&& this.currentQuestionIndex >= 19) {
+					const defaultOptions = [
+						'Directeur de département, de clientèle ou d\'études',
+						'Chef de groupe ou chargé d\'études',
+						'Autres fonctions'
+					];
+					
+					return this.buildRadioContainer(defaultOptions, false);
+				}
+				
+				return null;
+			}
+
+			buildRadioContainer(options, isTelework = false) {
+				const radioContainer = document.createElement('div');
+				radioContainer.className = 'radio-options';
+				
+				const title = document.createElement('div');
+				title.style.marginBottom = '15px';
+				title.style.fontWeight = 'bold';
+				title.style.fontSize = '15px';
+				title.textContent = isTelework ? 'Votre avis sur le télétravail :' : 'Sélectionnez votre profil :';
+				radioContainer.appendChild(title);
+
+				const radioName = 'radioQuestion_' + this.currentQuestionIndex + '_' + Date.now();
+
+				options.forEach((option, index) => {
+					const cleanOption = option.trim();
+					const optionDiv = document.createElement('div');
+					optionDiv.className = 'radio-option';
+
+					const radio = document.createElement('input');
+					radio.type = 'radio';
+					radio.name = radioName;
+					radio.value = cleanOption;
+					radio.id = 'option' + index + '_' + this.currentQuestionIndex + '_' + Date.now();
+
+					const label = document.createElement('label');
+					label.htmlFor = radio.id;
+					label.textContent = cleanOption;
+
+					optionDiv.appendChild(radio);
+					optionDiv.appendChild(label);
+					
+					optionDiv.addEventListener('click', () => {
+						radio.checked = true;
+						submitBtn.disabled = false;
+						radioContainer.querySelectorAll('.radio-option').forEach(opt => {
+							opt.style.backgroundColor = '';
+						});
+						optionDiv.style.backgroundColor = '#e3f2fd';
+					});
+
+					radioContainer.appendChild(optionDiv);
+				});
+
+				const submitBtn = document.createElement('button');
+				submitBtn.className = 'radio-submit-btn';
+				submitBtn.textContent = 'Valider ma réponse';
+				submitBtn.disabled = true;
+				
+				submitBtn.addEventListener('click', (e) => {
+					e.preventDefault();
+					const selectedOption = radioContainer.querySelector('input[name="' + radioName + '"]:checked');
+					if (selectedOption) {
+						this.handleRadioSelection(selectedOption.value);
+						radioContainer.remove();
+					}
+				});
+
+				radioContainer.appendChild(submitBtn);
+				return radioContainer;
+			}
+
+			async handleRadioSelection(selectedValue) {
+				this.blockUserInput();
+				
+				this.addMessage(selectedValue, 'user');
+				
+				this.surveyResponses.push({
+					questionNumber: this.currentQuestionIndex + 1,
+					question: this.lastBotMessage,
+					userResponse: selectedValue,
+					timestamp: new Date().toISOString()
+				});
+
+				this.hideError();
+				this.showTyping();
+
+				try {
+					this.conversationHistory.push({
+						role: "user",
+						content: selectedValue
+					});
+
+					const response = await this.callAPI(this.conversationHistory);
+					
+					this.hideTyping();
+					
+					const separatedResponses = this.separateResponse(response);
+					if (separatedResponses.length > 1) {
+						this.addMessage(separatedResponses[0], 'bot');
+						setTimeout(() => {
+							this.showTyping();
+							setTimeout(() => {
+								this.hideTyping();
+								this.addMessage(separatedResponses[1], 'bot');
+								this.lastBotMessage = separatedResponses[1];
+								
+								setTimeout(() => {
+									this.unblockUserInput();
+								}, 300);
+							}, 800);
+						}, 1000);
+						this.lastBotMessage = separatedResponses[1];
+					} else {
+						this.addMessage(response, 'bot');
+						this.lastBotMessage = response;
+						
+						setTimeout(() => {
+							this.unblockUserInput();
+						}, 300);
+					}
+					
+					this.conversationHistory.push({
+						role: "assistant",
+						content: response
+					});
+
+					this.currentQuestionIndex++;
+					this.updateProgress();
+
+					if (response.toLowerCase().includes('ceci conclut') || 
+						this.currentQuestionIndex >= 29) {
+						await this.completeSurvey();
+					}
+
+				} catch (error) {
+					this.hideTyping();
+					this.showError('Erreur survenue.');
+					this.unblockUserInput();
+					console.error('Erreur:', error);
+				} finally {
+					this.inputContainer.style.display = 'block';
+					this.chatInput.style.display = 'block';
+					this.sendButton.style.display = 'flex';
+				}
+			}
+
+			addMessage(text, sender) {
+				// FILTRAGE : Ne pas afficher les listes d'options radio qui vont devenir des boutons
+				if (sender === 'bot') {
+					const lowerText = text.toLowerCase();
+					const isOptionsList = (lowerText.includes('- deux jours') && lowerText.includes('- un jour') && lowerText.includes('- trois jours')) ||
+										  (lowerText.includes('- directeur') && lowerText.includes('- chef de groupe') && lowerText.includes('- autres'));
+					
+					if (isOptionsList) {
+						console.log("🚫 Message liste d'options ignoré (sera remplacé par des boutons)");
+						// Appeler checkAndAddButtons mais sans afficher le message
+						setTimeout(() => {
+							this.checkAndAddButtons(text);
+						}, 500);
+						return;
+					}
+				}
+
+				const messageDiv = document.createElement('div');
+				messageDiv.className = 'message ' + sender;
+				messageDiv.textContent = text;
+				
+				this.chatMessages.appendChild(messageDiv);
+				this.scrollToBottom();
+				
+				// INTERCEPTION pour les boutons de notation uniquement
+				if (sender === 'bot') {
+					setTimeout(() => {
+						this.checkAndAddButtons(text);
+					}, 500);
+				}
+			}
+
+			// Vérification pour ajouter les boutons de notation automatiquement
+			checkAndAddButtons(botMessage) {
+				const existingButtons = this.chatMessages.querySelector('.rating-options, .radio-options');
+				if (existingButtons) return;
+				
+				const lowerText = botMessage.toLowerCase();
+				
+				// Vérifier d'abord si c'est une question ouverte
+				const isOpenQuestion = lowerText.includes('comment vous sentez-vous') ||
+									   lowerText.includes('remarques') ||
+									   lowerText.includes('suggestions') ||
+									   lowerText.includes('améliorations') ||
+									   lowerText.includes('souhaiteriez-vous') ||
+									   lowerText.includes('attentes') ||
+									   lowerText.includes('environnement de travail');
+				
+				if (isOpenQuestion) {
+					console.log("📝 QUESTION OUVERTE - Réactivation de l'input");
+					this.inputContainer.style.display = 'block';
+					this.unblockUserInput();
+					return;
+				}
+				
+				// Gérer les listes d'options radio
+				const isOptionsList = (lowerText.includes('- deux jours') && lowerText.includes('- un jour') && lowerText.includes('- trois jours')) ||
+									  (lowerText.includes('- directeur') && lowerText.includes('- chef de groupe') && lowerText.includes('- autres'));
+				
+				if (isOptionsList) {
+					console.log("🔘 CRÉATION BOUTONS RADIO");
+					const isTelework = lowerText.includes('deux jours') && lowerText.includes('équilibre');
+					let options = [];
+					
+					if (isTelework) {
+						options = ['Deux jours c\'est le bon équilibre', 'Un jour serait suffisant', 'Trois jours serait encore mieux'];
+					} else {
+						options = ['Directeur de département, de clientèle ou d\'études', 'Chef de groupe ou chargé d\'études', 'Autres fonctions'];
+					}
+					
+					const radioButtons = this.buildRadioContainer(options, isTelework);
+					if (radioButtons) {
+						this.chatMessages.appendChild(radioButtons);
+						this.inputContainer.style.display = 'none';
+						this.scrollToBottom();
+					}
+					return;
+				}
+				
+				// Vérifier si c'est une question de notation ET si elle contient déjà l'explication
+				const needsRatingButtons = lowerText.includes('êtes-vous satisfait') ||
+										   lowerText.includes('estimez-vous que votre charge') ||
+										   lowerText.includes('les missions que l\'on vous confie') ||
+										   lowerText.includes('disposez-vous des moyens') ||
+										   lowerText.includes('ressentez-vous un niveau de stress') ||
+										   lowerText.includes('jugez-vous la qualité') ||
+										   lowerText.includes('vous sentez-vous reconnu') ||
+										   lowerText.includes('vous sentez-vous motivé') ||
+										   lowerText.includes('avez-vous le sentiment que votre travail') ||
+										   lowerText.includes('pensez-vous que votre rémunération') ||
+										   lowerText.includes('parvenez-vous à concilier');
+				
+				// CONDITION SUPPLÉMENTAIRE : S'assurer que l'explication de l'échelle est présente
+				const hasScaleExplanation = lowerText.includes('1 =') || lowerText.includes('1-') || 
+										   lowerText.includes('5 =') || lowerText.includes('5-') ||
+										   lowerText.includes('pas du tout') || lowerText.includes('très');
+				
+				if (needsRatingButtons && hasScaleExplanation) {
+					console.log("💯 CRÉATION BOUTONS NOTATION (avec explication complète)");
+					const ratingButtons = this.createRatingButtons(botMessage);
+					if (ratingButtons) {
+						this.chatMessages.appendChild(ratingButtons);
+						this.inputContainer.style.display = 'none';
+						this.scrollToBottom();
+					}
+					return;
+				} else if (needsRatingButtons && !hasScaleExplanation) {
+					console.log("⏳ Question de notation détectée mais explication manquante - attente...");
+					return; // Attendre l'explication
+				}
+				
+				// Si ce n'est ni une question ouverte, ni radio, ni notation → réactiver l'input par défaut
+				console.log("❓ QUESTION NON IDENTIFIÉE - Réactivation de l'input par défaut");
+				this.inputContainer.style.display = 'block';
+				this.unblockUserInput();
+			}
+
+			async sendMessage() {
+				if (this.isCompleted || this.botIsResponding) return;
+
+				const message = this.chatInput.value.trim();
+				if (!message) return;
+
+				this.blockUserInput();
+
+				const isValid = this.isValidResponse(message, this.lastBotMessage);
+				
+				this.addMessage(message, 'user');
+				this.chatInput.value = '';
+				this.hideError();
+
+				if (isValid) {
+					this.surveyResponses.push({
+						questionNumber: this.currentQuestionIndex + 1,
+						question: this.lastBotMessage,
+						userResponse: message,
+						timestamp: new Date().toISOString()
+					});
+					this.waitingForValidResponse = false;
+				} else {
+					this.waitingForValidResponse = true;
+				}
+
+				this.showTyping();
+
+				try {
+					this.conversationHistory.push({
+						role: "user",
+						content: message
+					});
+
+					const response = await this.callAPI(this.conversationHistory);
+					this.hideTyping();
+					
+					const radioButtons = this.createRadioButtons(response);
+					if (radioButtons) {
+						let questionText = response;
+						
+						if (response.includes('RADIO_QUESTION:')) {
+							const parts = response.split('RADIO_QUESTION:');
+							questionText = parts[0].trim();
+						}
+						
+						if (questionText && questionText.length > 10) {
+							const separatedResponses = this.separateResponse(questionText);
+							if (separatedResponses.length > 1) {
+								this.addMessage(separatedResponses[0], 'bot');
+								setTimeout(() => {
+									this.showTyping();
+									setTimeout(() => {
+										this.hideTyping();
+										this.addMessage(separatedResponses[1], 'bot');
+										setTimeout(() => {
+											this.chatMessages.appendChild(radioButtons);
+											this.scrollToBottom();
+										}, 300);
+									}, 800);
+								}, 1000);
+							} else {
+								this.addMessage(questionText, 'bot');
+								setTimeout(() => {
+									this.chatMessages.appendChild(radioButtons);
+									this.scrollToBottom();
+								}, 300);
+							}
+						} else {
+							setTimeout(() => {
+								this.chatMessages.appendChild(radioButtons);
+								this.scrollToBottom();
+							}, 300);
+						}
+						
+						this.inputContainer.style.display = 'none';
+						this.lastBotMessage = "Question avec boutons radio";
+					} else {
+						const separatedResponses = this.separateResponse(response);
+						if (separatedResponses.length > 1) {
+							this.addMessage(separatedResponses[0], 'bot');
+							setTimeout(() => {
+								this.showTyping();
+								setTimeout(() => {
+									this.hideTyping();
+									this.addMessage(separatedResponses[1], 'bot');
+									this.lastBotMessage = separatedResponses[1];
+									
+									setTimeout(() => {
+										this.unblockUserInput();
+									}, 300);
+								}, 800);
+							}, 1000);
+							this.lastBotMessage = separatedResponses[1];
+						} else {
+							this.addMessage(response, 'bot');
+							this.lastBotMessage = response;
+							
+							setTimeout(() => {
+								this.unblockUserInput();
+							}, 300);
+						}
+					}
+					
+					this.conversationHistory.push({
+						role: "assistant",
+						content: response
+					});
+
+					if (isValid && !this.waitingForValidResponse) {
+						this.currentQuestionIndex++;
+						this.updateProgress();
+					}
+
+					if (response.toLowerCase().includes('ceci conclut') || 
+						this.currentQuestionIndex >= 29) {
+						await this.completeSurvey();
+					}
+
+				} catch (error) {
+					this.hideTyping();
+					this.showError('Erreur survenue.');
+					this.unblockUserInput();
+					console.error('Erreur:', error);
+				}
+			}
+
+			async callAPI(messages) {
+				const response = await fetch('/api/chat', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						messages: messages,
+						sessionId: this.sessionId
+					})
+				});
+
+				if (!response.ok) {
+					throw new Error('Erreur HTTP: ' + response.status);
+				}
+
+				const data = await response.json();
+				return data.response;
+			}
+
+			async completeSurvey() {
+				this.isCompleted = true;
+				
+				try {
+					const saveResponse = await fetch('/api/save-responses', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							sessionId: this.sessionId,
+							responses: this.surveyResponses,
+							userInfo: {
+								userAgent: navigator.userAgent,
+								completedAt: new Date().toISOString()
+							}
+						})
+					});
+					const phpResponse = await fetch('save_qvt_responses.php', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify({
+							sessionId: this.sessionId,
+							responses: this.surveyResponses,
+							userInfo: {
+								userAgent: navigator.userAgent,
+								completedAt: new Date().toISOString()
+							}
+						})
+					});
+					if (saveResponse.ok) {
+						this.showCompletion();
+						this.statusText.textContent = 'Terminé ✅';
+						this.updateProgress(100);
+					} else {
+						throw new Error('Erreur sauvegarde');
+					}
+
+				} catch (error) {
+					console.error('Erreur sauvegarde:', error);
+					this.showError('Questionnaire terminé, mais erreur de sauvegarde.');
+				}
+			}
+
+			updateProgress(customProgress = null) {
+				const estimatedTotal = 29;
+				const progress = customProgress !== null ? customProgress : Math.min((this.currentQuestionIndex / estimatedTotal) * 100, 95);
+				this.progressFill.style.width = progress + '%';
+			}
+
+			showCompletion() {
+				this.completionMessage.style.display = 'block';
+				this.inputContainer.style.display = 'none';
+				setTimeout(() => {
+					this.chatMessages.appendChild(this.completionMessage);
+					this.scrollToBottom();
+				}, 500);
+			}
+
+			showTyping() {
+				this.typingIndicator.style.display = 'block';
+				this.chatMessages.appendChild(this.typingIndicator);
+				this.scrollToBottom();
+			}
+
+			hideTyping() {
+				this.typingIndicator.style.display = 'none';
+			}
+
+			showError(message) {
+				this.errorMessage.textContent = message;
+				this.errorMessage.style.display = 'block';
+				setTimeout(() => this.hideError(), 5000);
+			}
+
+			hideError() {
+				this.errorMessage.style.display = 'none';
+			}
+
+			scrollToBottom() {
+				this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+			}
+		}
+
+		// DEBUG : Observer global pour traquer tous les boutons créés
+		document.addEventListener('DOMContentLoaded', () => {
+			new SurveyChatbot();
+			
+			const observer = new MutationObserver(function(mutations) {
+				mutations.forEach(function(mutation) {
+					mutation.addedNodes.forEach(function(node) {
+						if (node.nodeType === 1 && node.classList && node.classList.contains('rating-options')) {
+							console.log("🔍 BOUTONS DE RATING DÉTECTÉS:", node);
+							console.log("🔍 Source:", node.getAttribute('data-source') || 'NON IDENTIFIÉE');
+						}
+					});
+				});
+			});
+			
+			observer.observe(document.body, { childList: true, subtree: true });
+		});
+    </script>
+</body>
+</html>
