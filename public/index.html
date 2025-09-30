@@ -453,6 +453,7 @@
                         perChar: 28
                     };
                     this.perfectScoreReactionChance = 1 / 2;
+                    this.followupReactionToggle = false;
 
                     this.initializeEventListeners();
                     this.loadAndStart();
@@ -785,6 +786,11 @@
                     return Math.random() < this.perfectScoreReactionChance;
                 }
 
+                shouldSendFollowupReaction() {
+                    this.followupReactionToggle = !this.followupReactionToggle;
+                    return this.followupReactionToggle;
+                }
+
                 async sendPerfectScoreReaction(question, rating) {
                     this.botIsResponding = true;
                     this.showTyping();
@@ -842,14 +848,50 @@
                         return;
                     }
 
-                    this.answersById[this.pendingFollowupQuestion.id].followup = text;
-                    this.pendingFollowupEntry.followup = text;
+                    const question = this.pendingFollowupQuestion;
+                    const entry = this.pendingFollowupEntry;
+
+                    if (question && this.answersById[question.id]) {
+                        this.answersById[question.id].followup = text;
+                    }
+                    if (entry) {
+                        entry.followup = text;
+                    }
+
+                    if (question && this.shouldSendFollowupReaction()) {
+                        await this.sendFollowupReaction(question, text);
+                    }
 
                     this.awaitingFollowup = false;
                     this.pendingFollowupQuestion = null;
                     this.pendingFollowupEntry = null;
 
                     await this.moveToNextQuestion();
+                }
+
+                async sendFollowupReaction(question, userAnswer) {
+                    this.botIsResponding = true;
+                    this.showTyping();
+                    try {
+                        const sanitizedAnswer = (userAnswer || '').replace(/\s+/g, ' ').trim();
+                        const prompt = `Voici la question du questionnaire QVT : "${question.text}". L'utilisateur a donné une note de 1 ou 2 puis a expliqué son ressenti ainsi : "${sanitizedAnswer}". Formule une réaction très courte (une à deux phrases maximum), chaleureuse et empathique. Ne pose aucune question, n'ajoute aucune consigne et n'utilise pas d'emoji.`;
+                        let reaction = await this.generateAIMessage(prompt);
+                        if (!reaction || !reaction.trim()) {
+                            reaction = "Je comprends, merci d'avoir pris le temps de m'expliquer ce ressenti.";
+                        }
+                        const delayDuration = this.calculateTypingDelay(reaction);
+                        await this.delay(delayDuration);
+                        this.addMessage(reaction, 'bot');
+                    } catch (error) {
+                        console.error('Erreur lors de la réaction empathique:', error);
+                        const fallback = "Merci pour votre franchise, je prends bien note de ce que vous traversez.";
+                        const delayDuration = this.calculateTypingDelay(fallback);
+                        await this.delay(delayDuration);
+                        this.addMessage(fallback, 'bot');
+                    } finally {
+                        this.hideTyping();
+                        this.botIsResponding = false;
+                    }
                 }
 
                 async showRadioQuestion(question) {
